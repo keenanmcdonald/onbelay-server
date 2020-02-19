@@ -45,13 +45,13 @@ const UserService = {
         return db
             .insert(newUser)
             .into('users')
-            .returning('*')
+            .returning('*') 
     },
-    updateUser(db, user){
+    updateUser(db, user, id){
         return db('users')
             .update({...user})
-            .where({id: user.id})
-            .returning('*')
+            .where({id})
+            .returning('*') 
     },
     serializeUser(user) {
         return {
@@ -59,13 +59,21 @@ const UserService = {
             email: xss(user.email),
             name: user.name ? xss(user.name) : '',
             photo_url: user.photo_url ? xss(user.photo_url) : '',
+            photo_id: user.photo_id ? xss(user.photo_id) : '',
             bio: user.bio ? xss(user.bio) : '',
-            style: user.style ? xss(user.style) : '',
-            grade_min: user.grade_min ? xss(user.grade_min) : '',
-            grade_max: user.grade_max ? xss(user.grade_max) : '',
+            styles: user.styles ? xss(user.styles) : '',
+            grade_min: user.min_grade ? xss(user.min_grade) : '',
+            grade_max: user.min_grade ? xss(user.max_grade) : '',
+            location: user.location ? user.location : '',
             date_created: new Date(user.date_created)
         }
     },
+    formatUser(user){
+        if (user.location){
+            user.location = `${user.location.lat}, ${user.location.lng}`
+        }
+        return user
+    }
 }
 
 module.exports = UserService

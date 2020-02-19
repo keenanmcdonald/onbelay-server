@@ -2,8 +2,7 @@ const express = require('express')
 const UsersService = require('./users-service')
 const AuthService = require('../auth/auth-service')
 const {requireAuth} = require('../middleware/jwt-auth')
-const cloudinary = require('cloudinary')
-const {cloudParser} = require('../cloud-config')
+const { cloudParser } = require('../cloud-config')
 
 const usersRouter = express.Router()
 const jsonBodyParser = express.json()
@@ -54,7 +53,7 @@ usersRouter
 
                         return UsersService.insertUser(req.app.get('db'), newUser)
                             .then(user => {
-                                return res.status(201).end()
+                                return res.status(201).send(user)
                             })
                             .catch(next)
                     })
@@ -65,38 +64,47 @@ usersRouter
 //updating information for a specific user
 usersRouter
     .route('/:user_id')
-    .post(cloudParser.single('photo'), (req, res, next) => {
-        console.log(req)
+    .get((req, res, next) => {
+        UsersService.getUserById(req.app.get('db'), req.params.user_id)
+            .then(user => {
+                user = UsersService.serializeUser(user)
+                return res.status(201).json(user)
+            })
+    })
+    .post(jsonBodyParser, (req, res, next) => {
+        // only certain fields into user but only if they appear in the body?        
 
-        /*
-        //is there a simpler way to write this? I want to make sure I don't pick up any random fields that might be in the body... maybe that doesn't matter
+        const user = UsersService.formatUser(req.body)
 
-        const {name, photo, bio, styles, min_grade, max_grade, location, radius} = req.body
-        user = {id: req.params.user_id, name, photo, bio, styles, min_grade, max_grade, location, radius}
-
-        for (const field of ['name', 'styles', 'min_grade', 'max_grade', 'location', 'radius']) { //only includes required fields
-            if (!user[field]){
-                return res.status(400).json({
-                    error: `Missing '${field}' in request body`
-                })
-            }
-        }
-        */
-
+        UsersService.updateUser(req.app.get('db'), user, req.params.user_id)
+            .then(user => {
+                const serializedUser = UsersService.serializeUser(user[0]) 
+                return res.status(201).json(serializedUser)
+            })
+            .catch(next)
     })
 
-//uploads a photo to cloudinary, and places the image url and id in user's row
-
+//uploads a photo to cloudinary, and places the image url and id in the database
 usersRouter
     .route('/:user_id/photo')
     .post(cloudParser.single('photo'), (req, res, next) => {
-        console.log(req)
-        console.log(req.file) // to see what is returned to you
+        //add overwrite existing photo in cloud service?
         const user = {}
-        user.id = req.params.user_id
+        user_id = req.params.user_id
         user.photo_url = req.file.url
         user.photo_id = req.file.public_id
-        UsersService.updateUser(user)
+        
+        UsersService.updateUser(req.app.get('db'), user, user_id)
+            .then(user => {
+                const serializedUser = UsersService.serializeUser(user[0]) 
+                res.status(201).json(serializedUser)
+            })
+    })
+
+usersRouter
+    .route('/:user_id/nearby')
+    .get((req, res, next) => {
+        
     })
 
 module.exports = usersRouter
