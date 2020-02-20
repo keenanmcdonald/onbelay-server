@@ -20,6 +20,7 @@
     "datauri": "^2.0.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "faker": "^4.1.0",
     "googleapis": "^39.2.0",
     "helmet": "^3.21.1",
     "jsonwebtoken": "^8.5.1",
@@ -30,6 +31,7 @@
     "multer-storage-cloudinary": "^2.2.1",
     "path": "^0.12.7",
     "pg": "^7.18.1",
+    "random-location": "^1.1.2",
     "xss": "^1.0.6"
   },
   "devDependencies": {

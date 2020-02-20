@@ -64,7 +64,7 @@ usersRouter
 //updating information for a specific user
 usersRouter
     .route('/:user_id')
-    .get((req, res, next) => {
+    .get((req, res) => {
         UsersService.getUserById(req.app.get('db'), req.params.user_id)
             .then(user => {
                 user = UsersService.serializeUser(user)
@@ -84,6 +84,28 @@ usersRouter
             .catch(next)
     })
 
+usersRouter
+    .route('/:user_id/location')
+    .get((req, res) => {
+        UsersService.getLocation(req.app.get('db'), req.params.user_id)
+            .then(location => {
+                console.log(location)
+                res.status(200).send(location)
+            })
+    })
+    .post(jsonBodyParser, (req, res, next) => {
+
+        const location = req.body
+
+        UsersService.updateLocation(req.app.get('db'), location, req.params.user_id)
+            .then(user => {
+                const serializedUser = UsersService.serializeUser(user[0]) 
+                return res.status(201).json(serializedUser)
+            })
+            .catch(next)
+    })
+
+
 //uploads a photo to cloudinary, and places the image url and id in the database
 usersRouter
     .route('/:user_id/photo')
@@ -94,6 +116,7 @@ usersRouter
         user.photo_url = req.file.url
         user.photo_id = req.file.public_id
         
+        
         UsersService.updateUser(req.app.get('db'), user, user_id)
             .then(user => {
                 const serializedUser = UsersService.serializeUser(user[0]) 
@@ -102,9 +125,13 @@ usersRouter
     })
 
 usersRouter
-    .route('/:user_id/nearby')
-    .get((req, res, next) => {
-        
+    .route('/:user_id/matching')
+    .get((req, res) => {
+        UsersService.getMatching(req.app.get('db'), req.params.user_id)
+            .then(matchingUsers => {
+                console.log(matchingUsers)
+                res.status(200).send(matchingUsers)
+            })
     })
 
 module.exports = usersRouter

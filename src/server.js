@@ -7,6 +7,8 @@ const db = knex({
   connection: DATABASE_URL,
 })
 
+//const st = knexPostgis(db)
+
 app.set('db', db)
 
 app.listen(PORT, () => {
