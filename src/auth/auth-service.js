@@ -20,7 +20,21 @@ const AuthService = {
         return jwt.verify(token, config.JWT_SECRET, {
             algorithms: ['HS256'],
         })
-    }
+    },
+    tokenMatchesId(token, user_id){
+        console.log(token)
+        return jwt.verify(token, config.JWT_SECRET, {
+            algorithms: ['HS256'],
+        })
+            .then(payload => {
+                if (payload.id === user_id){
+                    return true
+                }
+                else{
+                    return false
+                }
+            })
+    },
 }
 
 module.exports = AuthService

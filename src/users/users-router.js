@@ -1,7 +1,7 @@
 const express = require('express')
 const UsersService = require('./users-service')
 const AuthService = require('../auth/auth-service')
-const {requireAuth} = require('../middleware/jwt-auth')
+const {requireAuth, requireUserAuth} = require('../middleware/jwt-auth')
 const { cloudParser } = require('../cloud-config')
 
 const usersRouter = express.Router()
@@ -64,17 +64,17 @@ usersRouter
 //updating information for a specific user
 usersRouter
     .route('/:user_id')
-    .get((req, res) => {
+    .get(requireAuth, (req, res, next) => {
         UsersService.getUserById(req.app.get('db'), req.params.user_id)
             .then(user => {
                 user = UsersService.serializeUser(user)
                 return res.status(201).json(user)
             })
+            .catch(next)
     })
-    .post(jsonBodyParser, (req, res, next) => {
-        // only certain fields into user but only if they appear in the body?        
-
-        const user = UsersService.formatUser(req.body)
+    .post(requireUserAuth, jsonBodyParser, (req, res, next) => {
+        
+        const user = UsersService.formatUser(req.app.get('db'), req.body)
 
         UsersService.updateUser(req.app.get('db'), user, req.params.user_id)
             .then(user => {
@@ -83,33 +83,23 @@ usersRouter
             })
             .catch(next)
     })
-
+    
 usersRouter
-    .route('/:user_id/location')
-    .get((req, res) => {
-        UsersService.getLocation(req.app.get('db'), req.params.user_id)
-            .then(location => {
-                console.log(location)
-                res.status(200).send(location)
-            })
-    })
-    .post(jsonBodyParser, (req, res, next) => {
-
-        const location = req.body
-
-        UsersService.updateLocation(req.app.get('db'), location, req.params.user_id)
-            .then(user => {
-                const serializedUser = UsersService.serializeUser(user[0]) 
-                return res.status(201).json(serializedUser)
-            })
-            .catch(next)
+    .route('/:id1/distance_from/:id2')
+    .get(requireAuth, (req, res, next) => {
+        const {id1, id2} = req.params
+            UsersService.getDistanceInMiles(req.app.get('db'), id1, id2)
+                .then(distance => {
+                    res.status(200).json(distance)
+                })
+                .catch(next)
     })
 
 
 //uploads a photo to cloudinary, and places the image url and id in the database
 usersRouter
     .route('/:user_id/photo')
-    .post(cloudParser.single('photo'), (req, res, next) => {
+    .post(requireUserAuth, cloudParser.single('photo'), (req, res, next) => {
         //add overwrite existing photo in cloud service?
         const user = {}
         user_id = req.params.user_id
@@ -125,13 +115,49 @@ usersRouter
     })
 
 usersRouter
-    .route('/:user_id/matching')
-    .get((req, res) => {
+    .route('/:user_id/matches')
+    .get(requireUserAuth, (req, res, next) => {
         UsersService.getMatching(req.app.get('db'), req.params.user_id)
             .then(matchingUsers => {
-                console.log(matchingUsers)
-                res.status(200).send(matchingUsers)
+                const serializedUsers = []
+                for (user of matchingUsers){
+                    serializedUsers.push(UsersService.serializeUser(user))
+                }
+                res.status(200).send(serializedUsers)
             })
+            .catch(next)
+    })
+
+usersRouter
+    .route('/:user_id/has_seen/:seen_id')
+    .get(requireAuth, (req, res, next) => {
+        const {user_id, seen_id} = req.params
+        UsersService.hasSeen(req.app.get('db'), user_id, seen_id)
+            .then(hasSeen => {
+                res.status(200).send(hasSeen)
+            })
+            .catch(next)
+    })
+    .post(requireUserAuth, (req, res, next) => {
+        const {user_id, seen_id} = req.params
+
+        UsersService.createSeen(req.app.get('db'), user_id, seen_id)
+            .then((hasSeen) => {
+                res.status(201).end()
+            })
+            .catch(next)
+
+    })
+
+usersRouter
+    .route('/:user_id/has_seen')
+    .get(requireAuth, (req, res, next) => {
+        const {user_id} = req.params
+        UsersService.getSeen(req.app.get('db'), user_id)
+            .then(seen => {
+                res.status(200).send(seen)
+            })
+            .catch(next)
     })
 
 module.exports = usersRouter

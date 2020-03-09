@@ -1,6 +1,7 @@
 const xss = require('xss')
 const knexPostgis = require('knex-postgis');
 const {GRADES} = require('../config')
+const PartnersService = require('../partners/partners-service')
 
 const REGEX_UPPER_LOWER_NUMBER = /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])[\S]+/
 
@@ -16,13 +17,6 @@ const UserService = {
     },
     getUserById(db, id) {
         return db('users').select('*').where({id}).first()
-            .then(user => {
-                return this.getLocation(db, id)
-                    .then(location => {
-                        user.location = location
-                        return user
-                    })
-            })
     },
     validatePassword(password){
         if (password.length < 8) {
@@ -57,45 +51,81 @@ const UserService = {
             .where({id})
             .returning('*') 
     },
-    updateLocation(db, location, id){
-        return db('users')
-            .update({location: this.makeSRIDFromLatLng(location)})
-            .where({id})
-            .returning('*')
-    },
-    makeSRIDFromLatLng(db, latLng){
-        const st = knexPostgis(db)
-        const latitude = parseInt(latLng.lat)
-        const longitude = parseInt(latLng.lng)
-
-        return st.setSRID(st.makePoint(latitude, longitude), 4326)
-    },
-    getLocation(db, id){
+    makeSRIDFromLatLng(db, lat, lng){
         const st = knexPostgis(db)
 
-        return db('users')
-            .select(st.x('location').as('lng'), st.y('location').as('lat'))
-            .where({id})
-            .first()
+        return st.setSRID(st.makePoint(lng, lat), 4326)
+    },
+    getDistanceInMiles(db, id1, id2){
+        const st = knexPostgis(db)
+        return db
+            .raw(`
+                SELECT ST_DistanceSphere(a.locationSRID, b.locationSRID)
+                FROM users a, users b
+                WHERE a.id=${id1} AND b.id=${id2};
+            `)
+            .then(result => {
+                const distanceInMeters = result.rows[0].st_distancesphere
+                const distanceInMiles = Math.floor(distanceInMeters / 1609.344)
+                return distanceInMiles
+            })
     },
     getMatching(db, id){
-        return this.getUserById(db, id)
+        return this.getUserById(db, id) 
             .then(user => {
-                const {radius, max_grade, min_grade, styles, location} = user
-
+                const {radius, max_grade, min_grade, sport, trad, latitude, longitude} = user
                 const st = knexPostgis(db)
+                console.log(max_grade)
                 
-                //user also needs to be in other climbers' search radius
+                return PartnersService.getPartners(db, id)
+                    .then(partners => {
+                        const partnerIds = partners.map(partner => partner.id)
+                        return db('users')
+                            .select('*')
+                            .where(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), radius))
+                            .andWhere(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), 'radius'))
+                            .andWhere('min_grade', '<=', max_grade)
+                            .andWhere('max_grade', '>=', min_grade)
+                            .andWhereNot({id})
+                            .whereNotIn('id', partnerIds)
+                            .andWhere(function() {
+                                if (sport && trad){
+                                    this.where('sport', true).orWhere('trad', true)
+                                }
+                                else if (sport){
+                                    this.where('sport', true)                            
+                                }
+                                else if (trad){
+                                    this.where('trad', true)                            
+                                }
+                            })
 
-                return db('users')
-                    .select('*')
-                    .where(st.dwithin('location', st.geography(st.makePoint(location.lng, location.lat)), radius))
-                    .andWhere('min_grade', '<=', max_grade)
-                    .andWhere('max_grade', '>=', min_grade)
-                    .andWhere('styles' && styles)
+                    })
 
+                })
+    },
+    hasSeen(db, user_id, seen_id){
+        return db('seen')
+            .select('*')
+            .where({user_id, seen_id})
+            .first()
+            .then(res => {
+                return !!res
             })
-
+    },
+    createSeen(db, user_id, seen_id){
+        return db
+            .insert({user_id, seen_id})
+            .into('seen')
+            .returning('*')
+    },
+    getSeen(db, user_id){
+        return db('seen')
+            .select('seen_id')
+            .where({user_id})
+            .then(ids => {
+                return ids.map(obj => obj.seen_id)
+            })
     },
     serializeUser(user) {
         return {
@@ -105,21 +135,26 @@ const UserService = {
             photo_url: user.photo_url ? xss(user.photo_url) : '',
             photo_id: user.photo_id ? xss(user.photo_id) : '',
             bio: user.bio ? xss(user.bio) : '',
-            styles: user.styles ? xss(user.styles) : '',
-            grade_min: user.min_grade ? xss(user.min_grade) : '',
-            grade_max: user.min_grade ? xss(user.max_grade) : '',
-            location: user.location ? user.location : '',
-            radius: user.radius ? parseInt(user.radius) : '',
+            sport: user.sport ? user.sport : '',
+            trad: user.trad ? user.trad : '',
+            min_grade: GRADES[user.min_grade],
+            max_grade: GRADES[user.max_grade],
+            radius: Math.round(user.radius / 1609.344),
             date_created: new Date(user.date_created)
         }
     },
-    formatUser(user){
-        if (user.location){
-            user.location = `${user.location.lat}, ${user.location.lng}`
+    //formatUser is called when formatting user data taken straight from front-end
+    formatUser(db, user){
+        console.log(user)
+        if (user.latitude && user.longitude){
+            user.location_srid = this.makeSRIDFromLatLng(db, user.latitude, user.longitude)
         }
         if (GRADES.includes(user.min_grade) && GRADES.includes(user.max_grade)){
             user.min_grade = GRADES.indexOf(user.min_grade)
             user.max_grade = GRADES.indexOf(user.max_grade)
+        }
+        if (user.radius){
+            user.radius = Math.round(user.radius * 1609.34) //converts radius in miles to meters
         }
         return user
     }

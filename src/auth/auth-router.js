@@ -1,6 +1,6 @@
 const express = require('express')
 const AuthService = require('./auth-service')
-const UserService = require('../users/users-service')
+const UsersService = require('../users/users-service')
 
 const authRouter = express.Router()
 const jsonBodyParser = express.json()
@@ -15,7 +15,7 @@ authRouter.post('/login', jsonBodyParser, (req, res, next) => {
         }
     }
 
-    UserService.getUserByEmail(
+    UsersService.getUserByEmail(
         req.app.get('db'), loginUser.email.toLowerCase()
     )
         .then(dbUser => {
@@ -33,7 +33,7 @@ authRouter.post('/login', jsonBodyParser, (req, res, next) => {
                     }
                     const sub = dbUser.email
                     const payload = {user_id: dbUser.id}
-                    userS = UserService.serializeUser(dbUser)
+                    userS = UsersService.serializeUser(dbUser)
                     res
                     .status(200)
                     .send({
@@ -41,33 +41,36 @@ authRouter.post('/login', jsonBodyParser, (req, res, next) => {
                         authToken: AuthService.createJwt(sub, payload)
                     })
                 })
-
         })
         .catch(next)
 })
 
-authRouter.post('/verify_token', jsonBodyParser, (req, res, next) => {
-    const {authToken} = req.body
-    
-    const payload = AuthService.verifyJwt(authToken)
+//put token in header rather than body
+authRouter.get('/verify_token', (req, res) => {
+    const authToken = req.get('authorization') || ''
 
-    if (payload){
-        UserService.getUserByEmail(req.app.get('db'), payload.sub)
+    let bearerToken;
+
+    if (!authToken.toLowerCase().startsWith('bearer ')) {
+        return res.status(401).json({error: 'Missing bearer token'})
+    }
+    else {
+        bearerToken = authToken.slice(7, authToken.length)
+    }
+
+    try{
+        const payload = AuthService.verifyJwt(bearerToken)
+
+        UsersService.getUserByEmail(req.app.get('db'), payload.sub)
             .then(user => {
                 if (!user){
                     return res.status(401).json({error: 'Unauthorized request'})
                 }
-                user = UserService.serializeUser(user)
-                res
-                    .status(201)
-                    .send(user)
+                res.status(202).json(user)
             })
-            .catch(e => {
-                next(e)
-            })
-    }
-    else {
-        res.status(401)
+    } catch(error) {
+        console.log(error)
+        res.status(401).json({error: error})
     }
 })
 

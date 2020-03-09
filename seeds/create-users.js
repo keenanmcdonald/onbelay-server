@@ -16,7 +16,7 @@ const PHOTO_URLS = [
     'https://res.cloudinary.com/obcloud/image/upload/v1582155739/onbelay/profilephoto2_pxrlox.jpg',
     'https://res.cloudinary.com/obcloud/image/upload/v1582155739/onbelay/profilephoto4_l4h5p6.jpg',
 ]
-
+/*
 function randomStyles(){
     const randomStyles = []
     for (style of STYLES){
@@ -28,7 +28,7 @@ function randomStyles(){
         randomStyles.push('sport')
     }
     return randomStyles
-}
+}*/
 
 function randomMinMaxGrade(){
     const multiplier = GRADES.length - 1
@@ -53,7 +53,7 @@ function randomPhotoUrl(){
 
 //generates a random location across US - I could find a better method that would get the random lat lng of a random US city...
 function generateRandomLocation(){
-    const randomLoc = randomLocation.randomCirclePoint({latitude: 39.8283, longitude: -98.5795}, 3000000)
+    const randomLoc = randomLocation.randomCirclePoint({latitude: 30.2672, longitude: -97.7431}, 400000) //radius is ~ 250 miles in meters
     const randomLatLng = {}
     randomLatLng.lat = randomLoc.latitude
     randomLatLng.lng = randomLoc.longitude
@@ -61,8 +61,13 @@ function generateRandomLocation(){
     return randomLatLng
 }
 
+function formatLocation(location){
+    return `${location.lat}, ${location.lng}`
+}
+
 function createFakeUser(db) {
     const randomGrades = randomMinMaxGrade()
+    const location = generateRandomLocation()
 
     return {
         email: faker.internet.email(),
@@ -70,11 +75,15 @@ function createFakeUser(db) {
         name: faker.name.firstName(),
         photo_url: randomPhotoUrl(),
         bio: faker.lorem.sentence(),  
-        styles: randomStyles(),
+        sport: (Math.random > .5),
+        trad: (Math.random > .5),
         min_grade: randomGrades.min_grade,
         max_grade: randomGrades.max_grade,
-        location: UserService.makeSRIDFromLatLng(db, generateRandomLocation()),
-        radius: Math.floor(Math.random() * 160000)
+        address: faker.address.city(),
+        location_srid: UserService.makeSRIDFromLatLng(db, location.lat, location.lng),
+        latitude: location.lat,
+        longitude: location.lng,
+        radius: Math.floor(Math.random() * 321869) //max radius is 200 miles in meters
     }
 }
 
@@ -83,6 +92,7 @@ function createFakeUsers(db, numberOfUsers){
     for (let i = 0; i < numberOfUsers; i++){
         fakeUsers.push(createFakeUser(db))
     }
+    console.log(fakeUsers)
     return fakeUsers
 }
 

@@ -9,9 +9,11 @@ const db = knex({
 
 function seedUsers(db, users) {
   const fakeUsers = createFakeUsers(db, users)
+  console.log(fakeUsers)
   return db('users').insert(fakeUsers)
     .then(res => {
       console.log(res)
+      return res
     })
 }
 
