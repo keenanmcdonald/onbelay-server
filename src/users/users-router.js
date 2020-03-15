@@ -160,4 +160,23 @@ usersRouter
             .catch(next)
     })
 
+usersRouter
+    .route('/:user_id/rejects/:reject_id')
+    .get(requireAuth, (req, res, next) => {
+        const {user_id, reject_id} = req.params
+        UsersService.didReject(req.app.get('db'), user_id, reject_id)
+            .then(didReject => {
+                res.status(200).json(didReject)
+            })
+            .catch(next)
+    })
+    .post(requireUserAuth, (req, res, next) => {
+        const {user_id, reject_id} = req.params
+        UsersService.createReject(req.app.get('db'), user_id, reject_id)
+            .then(() => {
+                res.status(201).end()
+            })
+            .catch(next)
+    })
+
 module.exports = usersRouter

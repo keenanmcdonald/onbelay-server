@@ -60,7 +60,7 @@ const UserService = {
         const st = knexPostgis(db)
         return db
             .raw(`
-                SELECT ST_DistanceSphere(a.locationSRID, b.locationSRID)
+                SELECT ST_DistanceSphere(a.location_srid, b.location_srid)
                 FROM users a, users b
                 WHERE a.id=${id1} AND b.id=${id2};
             `)
@@ -80,24 +80,30 @@ const UserService = {
                 return PartnersService.getPartners(db, id)
                     .then(partners => {
                         const partnerIds = partners.map(partner => partner.id)
-                        return db('users')
-                            .select('*')
-                            .where(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), radius))
-                            .andWhere(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), 'radius'))
-                            .andWhere('min_grade', '<=', max_grade)
-                            .andWhere('max_grade', '>=', min_grade)
-                            .andWhereNot({id})
-                            .whereNotIn('id', partnerIds)
-                            .andWhere(function() {
-                                if (sport && trad){
-                                    this.where('sport', true).orWhere('trad', true)
-                                }
-                                else if (sport){
-                                    this.where('sport', true)                            
-                                }
-                                else if (trad){
-                                    this.where('trad', true)                            
-                                }
+                        return this.getRejects(db, id)
+                            .then(rejects => {
+                                const rejectIds = rejects.map(reject => reject.reject_id)
+                                return db('users')
+                                    .select('*')
+                                    .where(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), radius))
+                                    .andWhere(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), 'radius'))
+                                    .andWhere('min_grade', '<=', max_grade)
+                                    .andWhere('max_grade', '>=', min_grade)
+                                    .andWhereNot({id})
+                                    .whereNotIn('id', partnerIds)
+                                    .whereNotIn('id', rejectIds)
+                                    .andWhere(function() {
+                                        if (sport && trad){
+                                            this.where('sport', true).orWhere('trad', true)
+                                        }
+                                        else if (sport){
+                                            this.where('sport', true)                            
+                                        }
+                                        else if (trad){
+                                            this.where('trad', true)                            
+                                        }
+                                    })
+        
                             })
 
                     })
@@ -157,6 +163,26 @@ const UserService = {
             user.radius = Math.round(user.radius * 1609.34) //converts radius in miles to meters
         }
         return user
+    },
+    didReject(db, user_id, reject_id){
+        return db('rejects')
+            .select('*')
+            .where({user_id, reject_id})
+            .first()
+            .then(row => {
+                return !!row
+            })
+    },
+    createReject(db, user_id, reject_id){
+        return db('rejects')
+            .insert({user_id, reject_id})
+            .into('rejects')
+            .returning('*')
+    },
+    getRejects(db, user_id){
+        return db('rejects')
+            .select('reject_id')
+            .where({user_id})
     }
 }
 
