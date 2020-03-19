@@ -1,5 +1,6 @@
 const AuthService = require('../auth/auth-service')
 const UsersService = require('../users/users-service')
+const PartnersService = require('../partners/partners-service')
 
 function requireAuth(req, res, next) {
     const authToken = req.get('authorization') || ''
@@ -60,5 +61,35 @@ function requireUserAuth(req, res, next){
     }
 }
 
-module.exports = {requireAuth,requireUserAuth}
+function requirePartnerAuth(req, res, next){
+    const authToken = req.get('authorization') || ''
+    let bearerToken;
+    if (!authToken.toLowerCase().startsWith('bearer ')) {
+        return res.status(401).json({error: 'Missing bearer token'})
+    }
+    else {
+        bearerToken = authToken.slice(7, authToken.length)
+    }
+
+    try{
+        const payload = AuthService.verifyJwt(bearerToken)
+
+        PartnersService.isPartner(req.app.get('db'), req.params.user_id, payload.user_id)
+            .then(isPartner => {
+                if (isPartner || (payload.user_id === parseInt(req.params.user_id))){
+                    next()
+                }
+                else {
+                    res.status(401).json({error: 'incorrect credentials, user is not authorized to access this data'})
+                }
+            })
+
+    } catch(error) {
+        res.status(401).json({error: error})
+    }
+
+
+}
+
+module.exports = {requireAuth,requireUserAuth, requirePartnerAuth}
 

@@ -32,8 +32,8 @@ partnersRouter
 partnersRouter
     .route('/request')
     .post(requireAuth, jsonBodyParser, (req, res, next) => {
-        const {requester_id, requested_id} = req.body
-        PartnersService.addPartnerRequest(req.app.get('db'), requester_id, requested_id)
+        const {user_id, requested_id} = req.body
+        PartnersService.addPartnerRequest(req.app.get('db'), user_id, requested_id)
             .then(isPartner => {
                 res.status(201).send(isPartner)
             })
@@ -41,10 +41,10 @@ partnersRouter
     })
 
 partnersRouter
-    .route('/request/:requester_id/:requested_id')
+    .route('/request/:user_id/:requested_id')
     .get(requireAuth, (req, res, next) => {
-        const {requester_id, requested_id} = req.params
-        PartnersService.checkPartnerRequest(req.app.get('db'), requester_id, requested_id)
+        const {user_id, requested_id} = req.params
+        PartnersService.checkPartnerRequest(req.app.get('db'), user_id, requested_id)
             .then(hasRequested => {
                 res.status(200).send(hasRequested)
             })

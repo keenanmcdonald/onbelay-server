@@ -14,6 +14,11 @@ const PartnersService = {
                     .whereIn('id', partnerIds)
             })
     },
+    getAllRequests(db, user_id){
+        return db('requests')
+            .select('requested_id')
+            .where({user_id})
+    },
     isPartner(db, id1, id2){
         const id = this.joinIds(id1, id2)
         console.log('partners id', id)
@@ -25,24 +30,24 @@ const PartnersService = {
                 return !!partnerId.length
             })
     },
-    checkPartnerRequest(db, requester_id, requested_id){
-        return db('partner_requests')
-            .where({requester_id, requested_id})
+    checkPartnerRequest(db, user_id, requested_id){
+        return db('requests')
+            .where({user_id, requested_id})
             .first()
             .then(request => {
                 return !!request
             })
     },
-    addPartnerRequest(db, requester_id, requested_id){
+    addPartnerRequest(db, user_id, requested_id){
         return db
-            .insert({requester_id, requested_id})
-            .into('partner_requests')
+            .insert({user_id, requested_id})
+            .into('requests')
             .returning('*')
             .then(() => {
-                return this.checkPartnerRequest(db, requested_id, requester_id)
+                return this.checkPartnerRequest(db, requested_id, user_id)
                     .then(isPartner => {
                         if (isPartner){
-                            return this.createPartnership(db, requester_id, requested_id)
+                            return this.createPartnership(db, user_id, requested_id)
                                 .then(id => {
                                     return !!id
                                 })
@@ -60,6 +65,8 @@ const PartnersService = {
             .returning('*')
     },
     joinIds(id1, id2){
+        id1 = parseInt(id1)
+        id2 = parseInt(id2)
         if (id1 < id2){
             return id1 + '-' + id2
         }

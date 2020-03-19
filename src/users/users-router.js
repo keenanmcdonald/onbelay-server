@@ -1,11 +1,12 @@
 const express = require('express')
 const UsersService = require('./users-service')
 const AuthService = require('../auth/auth-service')
-const {requireAuth, requireUserAuth} = require('../middleware/jwt-auth')
+const {requireAuth, requireUserAuth, requirePartnerAuth} = require('../middleware/jwt-auth')
 const { cloudParser } = require('../cloud-config')
 
 const usersRouter = express.Router()
 const jsonBodyParser = express.json()
+
 
 usersRouter
     .route('/')
@@ -78,12 +79,12 @@ usersRouter
 
         UsersService.updateUser(req.app.get('db'), user, req.params.user_id)
             .then(user => {
-                const serializedUser = UsersService.serializeUser(user[0]) 
+                const serializedUser = UsersService.serializeSelf(user[0]) 
                 return res.status(201).json(serializedUser)
             })
             .catch(next)
     })
-    
+
 usersRouter
     .route('/:id1/distance_from/:id2')
     .get(requireAuth, (req, res, next) => {
@@ -99,31 +100,45 @@ usersRouter
 //uploads a photo to cloudinary, and places the image url and id in the database
 usersRouter
     .route('/:user_id/photo')
-    .post(requireUserAuth, cloudParser.single('photo'), (req, res, next) => {
+    .post(requireUserAuth, cloudParser.single('photo'), (req, res, next) => { 
         //add overwrite existing photo in cloud service?
         const user = {}
         user_id = req.params.user_id
         user.photo_url = req.file.url
         user.photo_id = req.file.public_id
-        
-        
+         
+         
         UsersService.updateUser(req.app.get('db'), user, user_id)
             .then(user => {
                 const serializedUser = UsersService.serializeUser(user[0]) 
                 res.status(201).json(serializedUser)
             })
     })
+usersRouter
+    .route('/:user_id/contact')
+    .get(requirePartnerAuth, (req, res, next) => {
+        const {user_id} = req.params
+        UsersService.getUserContact(req.app.get('db'), user_id)
+            .then(contact => {
+                const serializedContact = UsersService.serializeContact(contact)
+                res.status(200).send(serializedContact)
+            })
+    })
 
 usersRouter
     .route('/:user_id/matches')
     .get(requireUserAuth, (req, res, next) => {
+        const {user_id} = req.params
         UsersService.getMatching(req.app.get('db'), req.params.user_id)
             .then(matchingUsers => {
-                const serializedUsers = []
-                for (user of matchingUsers){
-                    serializedUsers.push(UsersService.serializeUser(user))
-                }
-                res.status(200).send(serializedUsers)
+                UsersService.sortMatches(req.app.get('db'), user_id, matchingUsers)
+                    .then(sortedUsers => {
+                        const serializedUsers = []
+                        for (user of sortedUsers){
+                            serializedUsers.push(UsersService.serializeUser(user))
+                        }
+                        res.status(200).json(serializedUsers)
+                    })
             })
             .catch(next)
     })

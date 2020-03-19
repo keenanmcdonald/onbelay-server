@@ -33,7 +33,7 @@ authRouter.post('/login', jsonBodyParser, (req, res, next) => {
                     }
                     const sub = dbUser.email
                     const payload = {user_id: dbUser.id}
-                    userS = UsersService.serializeUser(dbUser)
+                    userS = UsersService.serializeSelf(dbUser)
                     res
                     .status(200)
                     .send({
@@ -66,6 +66,8 @@ authRouter.get('/verify_token', (req, res) => {
                 if (!user){
                     return res.status(401).json({error: 'Unauthorized request'})
                 }
+                user = UsersService.serializeSelf(user)
+                console.log(user)
                 res.status(202).json(user)
             })
     } catch(error) {

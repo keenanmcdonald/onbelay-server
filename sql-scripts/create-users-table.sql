@@ -8,8 +8,8 @@ CREATE TABLE users (
     photo_url TEXT,
     photo_id TEXT,
     bio TEXT,
-    sport BOOLEAN,
-    trad BOOLEAN,
+    sport BOOLEAN DEFAULT false,
+    trad BOOLEAN DEFAULT false,
     min_grade INTEGER,
     max_grade INTEGER,
     location_srid GEOMETRY,
@@ -17,5 +17,6 @@ CREATE TABLE users (
     longitude FLOAT,
     address TEXT,
     radius INTEGER,
+    phone TEXT,
     date_created TIMESTAMP DEFAULT now() NOT NULL
 );

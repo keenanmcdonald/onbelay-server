@@ -2,8 +2,13 @@ const xss = require('xss')
 const knexPostgis = require('knex-postgis');
 const {GRADES} = require('../config')
 const PartnersService = require('../partners/partners-service')
+const NodeCache = require('node-cache')
 
 const REGEX_UPPER_LOWER_NUMBER = /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])[\S]+/
+
+const ttl = 15 * 60 * 1 //15 minutes
+const cache = new NodeCache(ttl)
+
 
 const UserService = {
     getAllUsers(db) {
@@ -17,6 +22,12 @@ const UserService = {
     },
     getUserById(db, id) {
         return db('users').select('*').where({id}).first()
+    },
+    getUserContact(db, id){
+        return db('users')
+            .select('phone', 'contact_email', 'contact_preferred')
+            .where({id})
+            .first()
     },
     validatePassword(password){
         if (password.length < 8) {
@@ -75,7 +86,7 @@ const UserService = {
             .then(user => {
                 const {radius, max_grade, min_grade, sport, trad, latitude, longitude} = user
                 const st = knexPostgis(db)
-                console.log(max_grade)
+                const cacheId = `${id}-matches`
                 
                 return PartnersService.getPartners(db, id)
                     .then(partners => {
@@ -83,32 +94,66 @@ const UserService = {
                         return this.getRejects(db, id)
                             .then(rejects => {
                                 const rejectIds = rejects.map(reject => reject.reject_id)
-                                return db('users')
-                                    .select('*')
-                                    .where(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), radius))
-                                    .andWhere(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), 'radius'))
-                                    .andWhere('min_grade', '<=', max_grade)
-                                    .andWhere('max_grade', '>=', min_grade)
-                                    .andWhereNot({id})
-                                    .whereNotIn('id', partnerIds)
-                                    .whereNotIn('id', rejectIds)
-                                    .andWhere(function() {
-                                        if (sport && trad){
-                                            this.where('sport', true).orWhere('trad', true)
-                                        }
-                                        else if (sport){
-                                            this.where('sport', true)                            
-                                        }
-                                        else if (trad){
-                                            this.where('trad', true)                            
-                                        }
-                                    })
-        
+                                if (cache.get(cacheId)){
+                                    return cache.get(cacheId)
+                                }
+                                else{
+                                    return db('users')
+                                        .select('*')
+                                        .where(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), radius))
+                                        .andWhere(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), 'radius'))
+                                        .andWhere('min_grade', '<=', max_grade)
+                                        .andWhere('max_grade', '>=', min_grade)
+                                        .andWhereNot({id})
+                                        .whereNotIn('id', partnerIds)
+                                        .whereNotIn('id', rejectIds)
+                                        .andWhere(function() {
+                                            if (sport && trad){
+                                                this.where('sport', true).orWhere('trad', true)
+                                            }
+                                            else if (sport){
+                                                this.where('sport', true)                            
+                                            }
+                                            else if (trad){
+                                                this.where('trad', true)                            
+                                            }
+                                        })
+                                        .then(result => {
+                                            cache.set(cacheId, result)
+                                            return cache.get(cacheId)
+                                        })
+                                }
                             })
-
                     })
 
                 })
+    },
+    sortMatches(db, user_id, matches){
+        return this.getUserById(db, user_id)
+            .then(user => {
+                return PartnersService.getAllRequests(db, user_id)
+                    .then(requests => {
+                        requests = requests.map(request => request.requested_id)
+                        for (match of matches){
+                            match.score = 0
+                            match.score -= 10 * Math.abs(match.max_grade - user.max_grade)
+                            console.log('grade difference', match.name, match.score)
+                            match.score += (user.sport && match.sport) ? 30 : 0
+                            match.score += (user.trad && match.trad) ? 30 : 0
+                            if (requests.includes(match.id)){
+                                match.score -= 100
+                            }
+                        }
+                        matches = matches.sort((a,b) => b.score - a.score)
+
+                        return matches
+                    })
+            })
+    },
+    getAllSeen(db, user_id){
+        return db('seen')
+            .select('seen_id')
+            .where({user_id})
     },
     hasSeen(db, user_id, seen_id){
         return db('seen')
@@ -133,7 +178,7 @@ const UserService = {
                 return ids.map(obj => obj.seen_id)
             })
     },
-    serializeUser(user) {
+    serializeSelf(user) {
         return {
             id: user.id,
             email: xss(user.email),
@@ -146,7 +191,27 @@ const UserService = {
             min_grade: GRADES[user.min_grade],
             max_grade: GRADES[user.max_grade],
             radius: Math.round(user.radius / 1609.344),
-            date_created: new Date(user.date_created)
+            date_created: new Date(user.date_created),
+            address: xss(user.address),
+            phone: xss(user.phone),
+        }
+    },
+    serializeUser(user) {
+        return {
+            id: user.id,
+            name: user.name ? xss(user.name) : '',
+            photo_url: user.photo_url ? xss(user.photo_url) : '',
+            bio: user.bio ? xss(user.bio) : '',
+            sport: user.sport ? user.sport : '',
+            trad: user.trad ? user.trad : '',
+            min_grade: GRADES[user.min_grade],
+            max_grade: GRADES[user.max_grade],
+            date_created: new Date(user.date_created),
+        }
+    },
+    serializeContact(contact) {
+        return {
+            phone: xss(contact.phone),
         }
     },
     //formatUser is called when formatting user data taken straight from front-end
