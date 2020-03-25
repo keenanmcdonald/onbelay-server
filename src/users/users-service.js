@@ -222,7 +222,7 @@ const UserService = {
         }
         return user
     },
-    didBlocked(db, user_id, blocked_id){
+    didBlock(db, user_id, blocked_id){
         return db('blocked')
             .select('*')
             .where({user_id, blocked_id})

@@ -85,18 +85,6 @@ usersRouter
             .catch(next)
     })
 
-usersRouter
-    .route('/:id1/distance_from/:id2')
-    .get(requireAuth, (req, res, next) => {
-        const {id1, id2} = req.params
-            UsersService.getDistanceInMiles(req.app.get('db'), id1, id2)
-                .then(distance => {
-                    res.status(200).json(distance)
-                })
-                .catch(next)
-    })
-
-
 //uploads a photo to cloudinary, and places the image url and id in the database
 usersRouter
     .route('/:user_id/photo')
@@ -124,7 +112,6 @@ usersRouter
                 res.status(200).send(serializedContact)
             })
     })
-
 usersRouter
     .route('/:user_id/matches')
     .get(requireUserAuth, (req, res, next) => {
@@ -142,7 +129,25 @@ usersRouter
             })
             .catch(next)
     })
-
+    usersRouter
+    .route('/:user_id/blocked/:blocked_id')
+    .get(requireAuth, (req, res, next) => {
+        const {user_id, blocked_id} = req.params
+        UsersService.didBlock(req.app.get('db'), user_id, blocked_id)
+            .then(didBlock => {
+                res.status(200).json(didBlock)
+            })
+            .catch(next)
+    })
+    .post(requireUserAuth, (req, res, next) => {
+        const {user_id, blocked_id} = req.params
+        UsersService.createBlock(req.app.get('db'), user_id, blocked_id)
+            .then(() => {
+                res.status(201).end()
+            })
+            .catch(next)
+    })
+/*
 usersRouter
     .route('/:user_id/has_seen/:seen_id')
     .get(requireAuth, (req, res, next) => {
@@ -174,24 +179,6 @@ usersRouter
             })
             .catch(next)
     })
-
-usersRouter
-    .route('/:user_id/blocked/:blocked_id')
-    .get(requireAuth, (req, res, next) => {
-        const {user_id, blocked_id} = req.params
-        UsersService.didBlock(req.app.get('db'), user_id, blocked_id)
-            .then(didBlock => {
-                res.status(200).json(didBlock)
-            })
-            .catch(next)
-    })
-    .post(requireUserAuth, (req, res, next) => {
-        const {user_id, blocked_id} = req.params
-        UsersService.createBlock(req.app.get('db'), user_id, blocked_id)
-            .then(() => {
-                res.status(201).end()
-            })
-            .catch(next)
-    })
+*/
 
 module.exports = usersRouter

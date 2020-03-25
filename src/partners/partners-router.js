@@ -49,7 +49,8 @@ partnersRouter
                 res.status(200).send(hasRequested)
             })
             .catch(next)
-
     })
+
+
 
 module.exports = partnersRouter

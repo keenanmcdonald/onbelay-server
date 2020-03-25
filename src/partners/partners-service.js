@@ -44,7 +44,7 @@ const PartnersService = {
         console.log('partners id', id)
         return db('partners')
             .select('*')
-            .where({id})
+            //.where({id})
             .then(partnerId => {
                 console.log('returned partnerId: ', partnerId)
                 return !!partnerId.length
