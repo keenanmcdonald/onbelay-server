@@ -110,7 +110,7 @@ usersRouter
          
         UsersService.updateUser(req.app.get('db'), user, user_id)
             .then(user => {
-                const serializedUser = UsersService.serializeUser(user[0]) 
+                const serializedUser = UsersService.serializeSelf(user[0]) 
                 res.status(201).json(serializedUser)
             })
     })
@@ -176,18 +176,18 @@ usersRouter
     })
 
 usersRouter
-    .route('/:user_id/rejects/:reject_id')
+    .route('/:user_id/blocked/:blocked_id')
     .get(requireAuth, (req, res, next) => {
-        const {user_id, reject_id} = req.params
-        UsersService.didReject(req.app.get('db'), user_id, reject_id)
-            .then(didReject => {
-                res.status(200).json(didReject)
+        const {user_id, blocked_id} = req.params
+        UsersService.didBlock(req.app.get('db'), user_id, blocked_id)
+            .then(didBlock => {
+                res.status(200).json(didBlock)
             })
             .catch(next)
     })
     .post(requireUserAuth, (req, res, next) => {
-        const {user_id, reject_id} = req.params
-        UsersService.createReject(req.app.get('db'), user_id, reject_id)
+        const {user_id, blocked_id} = req.params
+        UsersService.createBlock(req.app.get('db'), user_id, blocked_id)
             .then(() => {
                 res.status(201).end()
             })

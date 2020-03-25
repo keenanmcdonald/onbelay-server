@@ -1,3 +1,7 @@
+const xss = require('xss')
+const {GRADES} = require('../config')
+
+
 const PartnersService = {
     getPartners(db, user_id){
         return db('partners')
@@ -5,13 +9,29 @@ const PartnersService = {
             .where('id', 'like', `${user_id}-%`)
             .orWhere('id', 'like', `%-${user_id}`)
             .then(joinedIds => {
-                let partnerIds = []
-                for (let joinedId of joinedIds){
-                    partnerIds.push(this.findOtherFromJoinedId(user_id, joinedId.id))
-                }
-                return db('users')
+                return db('blocked')
                     .select('*')
-                    .whereIn('id', partnerIds)
+                    .where({user_id})
+                    .orWhere({blocked_id: user_id})
+                    .then(blockedRows => {
+                        const blockedIds = blockedRows.map(row => {
+                            if (row.user_id == user_id){
+                                return row.blocked_id
+                            }
+                            else {
+                                return row.user_id
+                            }
+                        })
+                        console.log(blockedIds)
+                        let partnerIds = []
+                        for (let joinedId of joinedIds){
+                            partnerIds.push(this.findOtherFromJoinedId(user_id, joinedId.id))
+                        }
+                        return db('users')
+                            .select('*')
+                            .whereIn('id', partnerIds)
+                            .whereNotIn('id', blockedIds)        
+                    })
             })
     },
     getAllRequests(db, user_id){
@@ -89,6 +109,21 @@ const PartnersService = {
         else{
             return null
         } 
+    },
+    serializePartner(user){
+        return {
+            id: user.id,
+            name: user.name ? xss(user.name) : '',
+            photo_url: user.photo_url ? xss(user.photo_url) : '',
+            bio: user.bio ? xss(user.bio) : '',
+            sport: user.sport ? user.sport : '',
+            trad: user.trad ? user.trad : '',
+            min_grade: GRADES[user.min_grade],
+            max_grade: GRADES[user.max_grade],
+            date_created: new Date(user.date_created),
+            phone: xss(user.phone),
+        }
+
     }
 }
 

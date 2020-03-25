@@ -27,14 +27,15 @@ app.use('/partners', partnersRouter)
 
 
 app.use(function errorHandler(error, req, res, next) {
+    //handler to send error message and status code so that all errors that go to the front end go through the handler
     let response
     if (NODE_ENV === 'production'){
-        response = {error: {message: 'server error'}}
+        response = {error: 'server error'}
     } else {
         console.error(error)
-        response = {message: error.message, error}
+        response = {error: error.message}
     }
-    res.status(500).json(response)
+    res.status(500).send(response)
 })
 
 module.exports = app

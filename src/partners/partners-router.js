@@ -12,7 +12,7 @@ partnersRouter
         const {user_id} = req.params
         PartnersService.getPartners(req.app.get('db'), user_id)
             .then(partners => {
-                partners = partners.map(partner => UsersService.serializeUser(partner))
+                partners = partners.map(partner => PartnersService.serializePartner(partner))
                 res.status(201).send(partners)
             })
             .catch(next)
