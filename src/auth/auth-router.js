@@ -20,7 +20,6 @@ authRouter.post('/login', jsonBodyParser, (req, res, next) => {
     )
         .then(dbUser => {
             if (!dbUser){
-                console.log('no user')
                 return res.status(400).json({error: 'Incorrect username or password'})
             }
             return AuthService.comparePasswords(loginUser.password, dbUser.password)
@@ -64,11 +63,9 @@ authRouter.get('/verify_token', (req, res) => {
                     return res.status(401).json({error: 'Unauthorized request'})
                 }
                 user = UsersService.serializeSelf(user)
-                console.log(user)
                 res.status(202).json(user)
             })
     } catch(error) {
-        console.log(error)
         res.status(401).json({error: error})
     }
 })

@@ -92,7 +92,6 @@ function createFakeUsers(db, numberOfUsers){
     for (let i = 0; i < numberOfUsers; i++){
         fakeUsers.push(createFakeUser(db))
     }
-    console.log(fakeUsers)
     return fakeUsers
 }
 

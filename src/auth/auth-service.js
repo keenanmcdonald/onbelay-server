@@ -22,7 +22,6 @@ const AuthService = {
         })
     },
     tokenMatchesId(token, user_id){
-        console.log(token)
         return jwt.verify(token, config.JWT_SECRET, {
             algorithms: ['HS256'],
         })

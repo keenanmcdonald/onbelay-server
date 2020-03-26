@@ -100,7 +100,6 @@ describe('Users Endpoints', () => {
           .send({email: user1.email, password: user1.password})
           .then(res => {
             token = res.body.authToken
-            console.log(token)
             done()
           })
       })

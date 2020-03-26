@@ -130,7 +130,6 @@ const UserService = {
                         for (match of matches){
                             match.score = 0
                             match.score -= 10 * Math.abs(match.max_grade - user.max_grade)
-                            console.log('grade difference', match.name, match.score)
                             match.score += (user.sport && match.sport) ? 30 : 0
                             match.score += (user.trad && match.trad) ? 30 : 0
                             if (requests.includes(match.id)){
@@ -209,7 +208,6 @@ const UserService = {
     },
     //formatUser is called when formatting user data taken straight from front-end
     formatUser(db, user){
-        console.log(user)
         if (user.latitude && user.longitude){
             user.location_srid = this.makeSRIDFromLatLng(db, user.latitude, user.longitude)
         }

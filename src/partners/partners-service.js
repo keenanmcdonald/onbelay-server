@@ -22,7 +22,6 @@ const PartnersService = {
                                 return row.user_id
                             }
                         })
-                        console.log(blockedIds)
                         let partnerIds = []
                         for (let joinedId of joinedIds){
                             partnerIds.push(this.findOtherFromJoinedId(user_id, joinedId.id))
@@ -41,12 +40,10 @@ const PartnersService = {
     },
     isPartner(db, id1, id2){
         const id = this.joinIds(id1, id2)
-        console.log('partners id', id)
         return db('partners')
             .select('*')
             //.where({id})
             .then(partnerId => {
-                console.log('returned partnerId: ', partnerId)
                 return !!partnerId.length
             })
     },
