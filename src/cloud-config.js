@@ -8,6 +8,8 @@ cloudinary.config({
     api_secret: process.env.CLOUD_API_SECRET
 })
 
+console.log('cloud api key: ', process.env.CLOUD_API_KEY)
+
 const storage = cloudinaryStorage({
     cloudinary: cloudinary,
     folder: "onbelay",
