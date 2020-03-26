@@ -42,7 +42,7 @@ const PartnersService = {
         const id = this.joinIds(id1, id2)
         return db('partners')
             .select('*')
-            //.where({id})
+            .where({id})
             .then(partnerId => {
                 return !!partnerId.length
             })
