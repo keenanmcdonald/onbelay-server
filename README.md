@@ -1,26 +1,36 @@
-# Express Boilerplate!
+# onBelay API
+This is the back end server for onBelay - a partner finder app for climbers that let's them connect with other climbers in their area.
 
-This is a boilerplate project used for starting new projects.
+## onBelay Repo
+https://github.com/keenanmcdonald/onbelay-app
 
-## Set up
+## onBelay Live App
+https://onbelayapp.com
 
-Complete the following steps to start a new project (NEW-PROJECT-NAME):
+## Endpoints
 
-1. Clone this repository to your local machine `git clone BOILERPLATE-URL NEW-PROJECTS-NAME`
-2. `cd` into the cloned repository
-3. Make a fresh start of the git history for this project with `rm -rf .git && git init`
-4. Install the node dependencies `npm install`
-5. Move the example Environment file to `.env` that will be ignored by git and read by the express server `mv example.env .env`
-6. Edit the contents of the `package.json` to use NEW-PROJECT-NAME instead of `"name": "express-boilerplate",`
+### /users/
+#### /
+GET: Information on all users (requires authentication)
+POST: Create new account with email / password
+#### /:userid
+GET: Information on a specific user
+POST: Profile information (i.e. name, bio, etc.)
+#### /:userid/photo
+POST: Profile photo
+#### /:userid/matches
+GET: All climbers that 'match' user's specifications (i.e. location / radius, minimum grade)
+#### /:user_id/blocked/:blocked_id
+GET: Sends boolean whether user of user_id has blocked user of blocked_id
+POST: User of user_id blocks user of blocked_id
 
-## Scripts
+### /partners/
+#### /:user_id
+GET: All partners of a particular user
+#### /is_partner/:id1/:id2
+GET: Sends boolean whether users of id1 and id2 are partners
+#### /request
+POST: Make partner request from user_id to requested_id (sent in body as JSON)
+#### /request/:user_id/:requested_id
+GET: Sends boolean whether user_id has requested requested_id to be partners
 
-Start the application `npm start`
-
-Start nodemon for the application `npm run dev`
-
-Run the tests `npm test`
-
-## Deploying
-
-When your new project is ready for deployment, add a new Heroku application with `heroku create`. This will make a new git remote called "heroku" and you can then `npm run deploy` which will push to this remote's master branch.
