@@ -7,6 +7,7 @@ const { NODE_ENV } = require('./config')
 const authRouter = require('./auth/auth-router')
 const usersRouter = require('./users/users-router')
 const partnersRouter = require('./partners/partners-router')
+const messagesRouter = require('./messages/messages-router')
 const {cloudinaryConfig} = require('./cloud-config')
 
 const app = express()
@@ -25,6 +26,8 @@ app.use('/auth', authRouter)
 app.use('/users', usersRouter)
 
 app.use('/partners', partnersRouter)
+
+app.use('/messages', messagesRouter)
 
 
 app.use(function errorHandler(error, req, res, next) {

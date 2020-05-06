@@ -2,7 +2,6 @@ const xss = require('xss')
 const knexPostgis = require('knex-postgis');
 const {GRADES} = require('../config')
 const PartnersService = require('../partners/partners-service')
-const NodeCache = require('node-cache')
 
 const REGEX_UPPER_LOWER_NUMBER = /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])[\S]+/
 
