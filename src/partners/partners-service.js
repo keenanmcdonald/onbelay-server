@@ -115,8 +115,10 @@ const PartnersService = {
             bio: user.bio ? xss(user.bio) : '',
             sport: user.sport ? user.sport : '',
             trad: user.trad ? user.trad : '',
-            min_grade: GRADES[user.min_grade],
-            max_grade: GRADES[user.max_grade],
+            min_grade_sport: GRADES[user.min_grade_sport],
+            min_grade_trad: GRADES[user.min_grade_trad],
+            redpoint_sport: GRADES[user.redpoint_sport],
+            redpoint_trad: GRADES[user.redpoint_trad],
             date_created: new Date(user.date_created),
             phone: xss(user.phone),
         }

@@ -83,7 +83,7 @@ const UserService = {
     getMatching(db, id){
         return this.getUserById(db, id) 
             .then(user => {
-                const {radius, max_grade, min_grade, sport, trad, latitude, longitude} = user
+                const {radius, redpoint_sport, redpoint_trad, min_grade_sport, min_grade_trad, sport, trad, latitude, longitude} = user
                 const st = knexPostgis(db)
                 
                 return PartnersService.getPartners(db, id)
@@ -96,20 +96,20 @@ const UserService = {
                                     .select('*')
                                     .where(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), radius))
                                     .andWhere(st.dwithin('location_srid', st.geography(st.makePoint(longitude, latitude)), 'radius'))
-                                    .andWhere('min_grade', '<=', max_grade)
-                                    .andWhere('max_grade', '>=', min_grade)
                                     .andWhereNot({id})
                                     .whereNotIn('id', partnerIds)
                                     .whereNotIn('id', blockedIds)
                                     .andWhere(function() {
                                         if (sport && trad){
-                                            this.where('sport', true).orWhere('trad', true)
+                                            this
+                                            .where('sport', true).andWhere('min_grade_sport', '<=', redpoint_sport).andWhere('redpoint_sport', '>=', min_grade_sport)
+                                            .orWhere('trad', true).andWhere('min_grade_trad', '<=', redpoint_trad).andWhere('redpoint_trad', '>=', min_grade_trad)
                                         }
                                         else if (sport){
-                                            this.where('sport', true)                            
+                                            this.where('sport', true).andWhere('min_grade_sport', '<=', redpoint_sport).andWhere('redpoint_sport', '>=', min_grade_sport)                       
                                         }
                                         else if (trad){
-                                            this.where('trad', true)
+                                            this.where('trad', true).andWhere('min_grade_trad', '<=', redpoint_trad).andWhere('redpoint_trad', '>=', min_grade_trad)
                                         }
                                         else{
                                             this.where('sport', false).andWhere('trad', false)
@@ -179,8 +179,10 @@ const UserService = {
             bio: user.bio ? xss(user.bio) : '',
             sport: user.sport ? user.sport : '',
             trad: user.trad ? user.trad : '',
-            min_grade: GRADES[user.min_grade],
-            max_grade: GRADES[user.max_grade],
+            min_grade_sport: GRADES[user.min_grade_sport],
+            min_grade_trad: GRADES[user.min_grade_trad],
+            redpoint_sport: GRADES[user.redpoint_sport],
+            redpoint_trad: GRADES[user.redpoint_trad],
             radius: Math.round(user.radius / 1609.344),
             date_created: new Date(user.date_created),
             address: xss(user.address),
@@ -195,8 +197,10 @@ const UserService = {
             bio: user.bio ? xss(user.bio) : '',
             sport: user.sport ? user.sport : '',
             trad: user.trad ? user.trad : '',
-            min_grade: GRADES[user.min_grade],
-            max_grade: GRADES[user.max_grade],
+            min_grade_sport: GRADES[user.min_grade_sport],
+            min_grade_trad: GRADES[user.min_grade_trad],
+            redpoint_sport: GRADES[user.redpoint_sport],
+            redpoint_trad: GRADES[user.redpoint_trad],
             date_created: new Date(user.date_created),
         }
     },
@@ -210,10 +214,15 @@ const UserService = {
         if (user.latitude && user.longitude){
             user.location_srid = this.makeSRIDFromLatLng(db, user.latitude, user.longitude)
         }
-        if (GRADES.includes(user.min_grade) && GRADES.includes(user.max_grade)){
-            user.min_grade = GRADES.indexOf(user.min_grade)
-            user.max_grade = GRADES.indexOf(user.max_grade)
+        if (GRADES.includes(user.min_grade_sport) && GRADES.includes(user.redpoint_sport)){
+            user.min_grade_sport = GRADES.indexOf(user.min_grade_sport)
+            user.redpoint_sport = GRADES.indexOf(user.redpoint_sport)
         }
+        if (GRADES.includes(user.min_grade_trad) && GRADES.includes(user.redpoint_trad)){
+            user.min_grade_trad = GRADES.indexOf(user.min_grade_trad)
+            user.redpoint_trad = GRADES.indexOf(user.redpoint_trad)
+        }
+
         if (user.radius){
             user.radius = Math.round(user.radius * 1609.34) //converts radius in miles to meters
         }
