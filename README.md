@@ -9,7 +9,7 @@ https://onbelayapp.com
 
 ## Endpoints
 
-### /users/
+### /users
 #### /
 GET: Information on all users (requires authentication)
 POST: Create new account with email / password
@@ -24,7 +24,7 @@ GET: All climbers that 'match' user's specifications (i.e. location / radius, mi
 GET: Sends boolean whether user of user_id has blocked user of blocked_id
 POST: User of user_id blocks user of blocked_id
 
-### /partners/
+### /partners
 #### /:user_id
 GET: All partners of a particular user
 #### /is_partner/:id1/:id2

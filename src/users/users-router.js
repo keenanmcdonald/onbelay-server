@@ -44,13 +44,13 @@ usersRouter
                 if (hasUser) {
                     return res.status(400).json({error: 'There is already an account associated with this email address'})
                 }
-
-                return AuthService.hashPassword(password)
-                    .then(hashedPassword => {
-                        const newUser = {
-                            email,
-                            password: hashedPassword,
-                        }
+                else{
+                    return AuthService.hashPassword(password)
+                        .then(hashedPassword => {
+                            const newUser = {
+                                email,
+                                password: hashedPassword,
+                            }
 
                         return UsersService.insertUser(req.app.get('db'), newUser)
                             .then(user => {
@@ -58,6 +58,7 @@ usersRouter
                             })
                             .catch(next)
                     })
+                }
             })
             .catch(next)
     })
@@ -147,38 +148,5 @@ usersRouter
             })
             .catch(next)
     })
-/*
-usersRouter
-    .route('/:user_id/has_seen/:seen_id')
-    .get(requireAuth, (req, res, next) => {
-        const {user_id, seen_id} = req.params
-        UsersService.hasSeen(req.app.get('db'), user_id, seen_id)
-            .then(hasSeen => {
-                res.status(200).send(hasSeen)
-            })
-            .catch(next)
-    })
-    .post(requireUserAuth, (req, res, next) => {
-        const {user_id, seen_id} = req.params
-
-        UsersService.createSeen(req.app.get('db'), user_id, seen_id)
-            .then((hasSeen) => {
-                res.status(201).end()
-            })
-            .catch(next)
-
-    })
-
-usersRouter
-    .route('/:user_id/has_seen')
-    .get(requireAuth, (req, res, next) => {
-        const {user_id} = req.params
-        UsersService.getSeen(req.app.get('db'), user_id)
-            .then(seen => {
-                res.status(200).send(seen)
-            })
-            .catch(next)
-    })
-*/
 
 module.exports = usersRouter

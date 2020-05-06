@@ -7,7 +7,6 @@ const NodeCache = require('node-cache')
 const REGEX_UPPER_LOWER_NUMBER = /(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])[\S]+/
 
 const ttl = 15 * 60 * 1 //15 minutes
-const cache = new NodeCache(ttl)
 
 
 const UserService = {
