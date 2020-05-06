@@ -1,6 +1,7 @@
 const express = require('express')
 const MessagesService = require('./messages-service')
 const UsersService = require('../users/users-service')
+const {requireUserAuth} = require('../middleware/jwt-auth')
 
 const messagesRouter = express.Router()
 const jsonBodyParser = express.json()
