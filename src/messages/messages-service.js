@@ -1,6 +1,5 @@
 const MessagesService = {
     sendMessage(db, from_id, to_id, content){
-        console.log({from_id, to_id, content})
         return db
             .insert({from_id, to_id, content})
             .into('messages')

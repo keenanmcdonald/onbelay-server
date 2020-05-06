@@ -6,20 +6,20 @@ const messagesRouter = express.Router()
 const jsonBodyParser = express.json()
 
 messagesRouter
-.route('/:from_id/:to_id')
-.get(jsonBodyParser, (req, res) => {
-    const {to_id, from_id} = req.params
+.route('/:user_id/:to_id')
+.get(requireUserAuth, jsonBodyParser, (req, res) => {
+    const from_id = req.params.user_id
+    const to_id = req.params.to_id
 
     MessagesService.getMessages(req.app.get('db'), to_id, from_id)
         .then(messages => {
             res.status(200).send(messages)
         })
 })
-.post(jsonBodyParser, (req, res) => {
-    console.log(req.body)
+.post(requireUserAuth, jsonBodyParser, (req, res) => {
     const {content} = req.body
-    console.log(content)
-    const {to_id, from_id} = req.params
+    const from_id = req.params.user_id
+    const to_id = req.params.to_id
 
     if (!content){
         res.status(400).end()
