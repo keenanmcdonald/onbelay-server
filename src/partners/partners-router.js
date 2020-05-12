@@ -1,6 +1,7 @@
 const express = require('express')
 const PartnersService = require('./partners-service')
 const UsersService = require('../users/users-service')
+const NotificationsService = require('../notifications/notifications-service')
 const {requireAuth} = require('../middleware/jwt-auth')
 
 const partnersRouter = express.Router()
@@ -35,7 +36,15 @@ partnersRouter
         const {user_id, requested_id} = req.body
         PartnersService.addPartnerRequest(req.app.get('db'), user_id, requested_id)
             .then(isPartner => {
-                res.status(201).send(isPartner)
+                if (isPartner){
+                    NotificationsService.createNotification(req.app.get('db'), requested_id, user_id, 'partner')
+                        .then(() => {
+                            res.status(201).send(isPartner)
+                        })
+                }
+                else{
+                    res.status(201).send(isPartner)
+                }
             })
             .catch(next)
     })

@@ -1,6 +1,6 @@
 const express = require('express')
 const MessagesService = require('./messages-service')
-const UsersService = require('../users/users-service')
+const NotificationsService = require('../notifications/notifications-service')
 const {requireUserAuth} = require('../middleware/jwt-auth')
 
 const messagesRouter = express.Router()
@@ -28,7 +28,10 @@ messagesRouter
 
     MessagesService.sendMessage(req.app.get('db'), from_id, to_id, content)
         .then(() => {
-            res.status(201).end()
+            NotificationsService.createNotification(req.app.get('db'), to_id, from_id, 'message')
+                .then(() => {
+                    res.status(201).end()
+                })
         })
 })
 
