@@ -10,6 +10,11 @@ const MessagesService = {
             .where({from_id: id1, to_id: id2})
             .orWhere({from_id: id2, to_id: id1})
     },
+    getAllMessages(db, user_id){
+        return db('messages')
+            .where({from_id: user_id})
+            .orWhere({to_id: user_id})
+    }
 }
 
 module.exports = MessagesService 

@@ -7,8 +7,19 @@ const messagesRouter = express.Router()
 const jsonBodyParser = express.json()
 
 messagesRouter
+.route('/:user_id')
+.get(requireUserAuth, (req, res) => {
+    const user_id = req.params.user_id
+
+    MessagesService.getAllMessages(req.app.get('db'), user_id)
+        .then(messages => {
+            res.status(200).send(messages)
+        })
+})
+
+messagesRouter
 .route('/:user_id/:to_id')
-.get(requireUserAuth, jsonBodyParser, (req, res) => {
+.get(requireUserAuth, (req, res) => {
     const from_id = req.params.user_id
     const to_id = req.params.to_id
 
